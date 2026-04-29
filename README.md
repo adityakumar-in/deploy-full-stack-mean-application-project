@@ -1,11 +1,9 @@
 # MEAN Stack CRUD App — Tutorials Manager
-
-A full-stack CRUD application built with the **MEAN stack** (MongoDB, Express, Angular 15, Node.js), containerised with Docker, served via Nginx, and deployed automatically through a GitHub Actions CI/CD pipeline.
+\- MEAN Stack CRUD App — Tutorials Manager (AWS Deployed)
+A full-stack CRUD application built with the MEAN stack (MongoDB, Express, Angular 15, Node.js), containerised with Docker, and served via Nginx. The application is hosted on an AWS EC2 instance.
 
 > \*\*Live URL (local):\*\* http://localhost  
 > \*\*API Base:\*\* http://localhost/api/tutorials
-
-
 
 \---
 
@@ -13,38 +11,20 @@ A full-stack CRUD application built with the **MEAN stack** (MongoDB, Express, A
 
 ```
 crud-dd-task-mean-app/
-├── .github/
-│   └── workflows/
-│       └── main.yml          # GitHub Actions CI/CD pipeline
-├── backend/
-│   ├── app/
-│   │   ├── config/
-│   │   │   └── db.config.js   # MongoDB connection URL
-│   │   ├── controllers/
-│   │   │   └── tutorial.controller.js
-│   │   ├── models/
-│   │   │   ├── index.js
-│   │   │   └── tutorial.model.js
-│   │   └── routes/
-│   │       └── turorial.routes.js
-│   ├── .dockerignore
-│   ├── Dockerfile
-│   ├── package.json
-│   └── server.js
-├── frontend/
-│   ├── src/
-│   │   └── app/
-│   │       └── services/
-│   │           └── tutorial.service.ts  # API base URL setting
-│   ├── .dockerignore
-│   ├── Dockerfile
-│   ├── nginx.conf             # Nginx config for Angular container
-│   ├── angular.json
-│   └── package.json
-├── nginx/
-│   └── default.conf           # Nginx reverse proxy config (port 80)
-├── docker-compose.yml
-└── README.md
+├── backend/                  # Node.js + Express API
+│   ├── app/                  # Controllers, Models, Routes
+│   ├── Dockerfile            # Backend Docker instructions
+│   ├── package.json          # Dependencies
+│   └── server.js             # Entry point
+├── frontend/                 # Angular 15 Application
+│   ├── src/                  # Components & Services
+│   ├── Dockerfile            # Multi-stage Docker build
+│   ├── nginx.conf            # Internal Nginx config (Port 8081)
+│   └── package.json          # Frontend dependencies
+├── nginx/                    # Reverse Proxy Setup
+│   └── default.conf          # Main Nginx config (Port 80)
+├── docker-compose.yml        # Orchestration (Images: Aditya)
+└── README.md                 # Project Documentation
 ```
 
 \---
@@ -132,6 +112,7 @@ Browser
 │ MongoDB  │
 │  :27017  │
 └──────────┘
+
 
 All containers → custom-network (Docker bridge)
 MongoDB data → persisted in `mongo\_data` named volume
@@ -233,83 +214,6 @@ Serves the Angular build inside the frontend container:
 * Listens on **port 8081**
 * `try\_files $uri $uri/ /index.html` — enables Angular client-side routing
 * Cache headers for static assets (JS, CSS, images)
-
-\---
-
-## 🔄 CI/CD Pipeline — GitHub Actions
-
-File: `.github/workflows/main.yml`
-
-### Pipeline Overview
-
-```
-Push to main branch
-        │
-        ├──────────────────────────────────┐
-        ▼                                  ▼
- build-backend                      build-frontend
- (Build + push backend              (Build + push frontend
-  image to Docker Hub)               image to Docker Hub)
-        │                                  │
-        └──────────────┬───────────────────┘
-                       ▼
-                    deploy
-              (SSH into server,
-               git pull + docker
-               compose up -d)
-```
-
-### Jobs
-
-|Job|Trigger|What it does|
-|-|-|-|
-|`build-backend`|push to `main` / PR|Builds backend Docker image, pushes to Docker Hub|
-|`build-frontend`|push to `main` / PR|Builds frontend Docker image, pushes to Docker Hub|
-|`deploy`|push to `main` only|SSHes into server, pulls new images, restarts containers|
-
-> \*\*Note:\*\* Docker images are \*\*only pushed on `push` to `main`\*\*, not on PRs (for safety).
-
-\---
-
-## 🔐 GitHub Secrets Setup
-
-Before the CI/CD pipeline can run, you must add secrets in your GitHub repository.
-
-### Step 1: Go to Repository Settings
-
-```
-GitHub → Your Repo → Settings → Secrets and variables → Actions → New repository secret
-```
-
-### Step 2: Add These Secrets
-
-|Secret Name|Description|Example|
-|-|-|-|
-|`DOCKER\_USERNAME`|Your Docker Hub username|`manishjangra97`|
-|`DOCKER\_PASSWORD`|Docker Hub password or **Access Token**|`dckr\_pat\_xxxx`|
-|`EC2\_HOST`|IP address of your deployment server|`192.168.1.100`|
-|`EC2\_USER`|SSH username on server|`ubuntu`|
-|`EC2\_PRIVATE\_KEY`|Private SSH key (contents of `\~/.ssh/id\_rsa`)|`-----BEGIN...`|
-
-### Step 3: Get a Docker Hub Access Token (Recommended)
-
-1. Go to https://hub.docker.com → Account Settings → Security
-2. Click **New Access Token**
-3. Name it `github-actions`, permissions: **Read, Write, Delete**
-4. Copy the token and save it as `DOCKER\_PASSWORD` in GitHub Secrets
-
-### Step 4: Setup SSH Key for Server (if deploying to a remote server)
-
-```bash
-# On your local machine, generate SSH key pair
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f \~/.ssh/deploy\_key
-
-# Copy public key to your server
-ssh-copy-id -i \~/.ssh/deploy\_key.pub user@your-server-ip
-
-# Add private key content to GitHub Secret: EC2\_SSH\_KEY
-cat \~/.ssh/deploy\_key
-```
 
 \---
 
@@ -606,6 +510,3 @@ GitHub Actions (main.yml)
 |Reverse Proxy|Nginx|
 |CI/CD|GitHub Actions|
 |Image Registry|Docker Hub|
-
-
-
